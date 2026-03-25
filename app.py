@@ -10,8 +10,8 @@ import sqlite3
 import time
 from pathlib import Path
 
+import altair as alt
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 
 _ROOT = Path(__file__).resolve().parent
@@ -88,44 +88,50 @@ def format_krw(n: float) -> str:
 
 
 def chart_cost_vs_revenue(daily: pd.DataFrame) -> None:
-    """광고비(막대 #4834d4) + 매출(라인 #f0932b), 범례 상단 오른쪽."""
-    fig = go.Figure()
-    fig.add_trace(
-        go.Bar(
-            name="광고비",
-            x=daily["date"],
-            y=daily["cost"],
-            marker_color="#4834d4",
-            hovertemplate="일자=%{x}<br>광고비=%{y:,}<extra></extra>",
+    """광고비(막대 #4834d4) + 매출(라인 #f0932b), 범례 상단 오른쪽. Altair(Streamlit 기본 의존성)."""
+    color_scale = alt.Scale(
+        domain=["광고비", "매출"],
+        range=["#4834d4", "#f0932b"],
+    )
+    legend = alt.Legend(
+        orient="top-right",
+        title=None,
+        direction="horizontal",
+    )
+
+    bar = (
+        alt.Chart(daily.assign(지표="광고비"))
+        .mark_bar()
+        .encode(
+            x=alt.X("date:O", title="일자", sort=None),
+            y=alt.Y("cost:Q", title="금액(원)"),
+            color=alt.Color("지표:N", scale=color_scale, legend=legend),
+            tooltip=[
+                alt.Tooltip("date:O", title="일자"),
+                alt.Tooltip("cost:Q", title="광고비", format=","),
+            ],
         )
     )
-    fig.add_trace(
-        go.Scatter(
-            name="매출",
-            x=daily["date"],
-            y=daily["revenue"],
-            mode="lines+markers",
-            line=dict(color="#f0932b", width=2),
-            marker=dict(color="#f0932b"),
-            hovertemplate="일자=%{x}<br>매출=%{y:,}<extra></extra>",
+    line = (
+        alt.Chart(daily.assign(지표="매출"))
+        .mark_line(point=True, strokeWidth=2)
+        .encode(
+            x=alt.X("date:O", sort=None),
+            y=alt.Y("revenue:Q"),
+            color=alt.Color("지표:N", scale=color_scale, legend=None),
+            tooltip=[
+                alt.Tooltip("date:O", title="일자"),
+                alt.Tooltip("revenue:Q", title="매출", format=","),
+            ],
         )
     )
-    fig.update_layout(
-        height=360,
-        margin=dict(l=48, r=24, t=56, b=48),
-        xaxis_title="일자",
-        yaxis_title="금액(원)",
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=1.02,
-            xanchor="right",
-            x=1,
-        ),
-        bargap=0.2,
-        hovermode="x unified",
+    chart = (
+        (bar + line)
+        .resolve_scale(y="shared", color="shared")
+        .properties(height=360)
+        .configure_axis(labelLimit=200)
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.altair_chart(chart, use_container_width=True)
 
 
 def login_page() -> None:
