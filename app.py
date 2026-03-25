@@ -196,7 +196,11 @@ def dashboard() -> None:
     m5.metric("매출", format_krw(total_rev))
     m6.metric("ROAS", f"{roas:.2f}x")
 
-    st.caption(f"CTR {ctr:.2f}% · 평균 CPC {format_krw(cpc)}")
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("총 클릭수", f"{total_clk:,}")
+    k2.metric("총 노출수", f"{total_imp:,}")
+    k3.metric("평균 CTR", f"{ctr:.2f}%")
+    k4.metric("평균 CPC", format_krw(cpc))
 
     row1, row2 = st.columns(2)
     daily = (
