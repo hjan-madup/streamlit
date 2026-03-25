@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 _ROOT = Path(__file__).resolve().parent
@@ -84,6 +85,47 @@ def load_dataframe() -> pd.DataFrame:
 
 def format_krw(n: float) -> str:
     return f"{int(round(n)):,}원"
+
+
+def chart_cost_vs_revenue(daily: pd.DataFrame) -> None:
+    """광고비(막대 #4834d4) + 매출(라인 #f0932b), 범례 상단 오른쪽."""
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            name="광고비",
+            x=daily["date"],
+            y=daily["cost"],
+            marker_color="#4834d4",
+            hovertemplate="일자=%{x}<br>광고비=%{y:,}<extra></extra>",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            name="매출",
+            x=daily["date"],
+            y=daily["revenue"],
+            mode="lines+markers",
+            line=dict(color="#f0932b", width=2),
+            marker=dict(color="#f0932b"),
+            hovertemplate="일자=%{x}<br>매출=%{y:,}<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        height=360,
+        margin=dict(l=48, r=24, t=56, b=48),
+        xaxis_title="일자",
+        yaxis_title="금액(원)",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+        ),
+        bargap=0.2,
+        hovermode="x unified",
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def login_page() -> None:
@@ -211,8 +253,8 @@ def dashboard() -> None:
         .sort_values("date")
     )
     with row1:
-        st.subheader("일별 비용·매출")
-        st.line_chart(daily.set_index("date")[["cost", "revenue"]])
+        st.subheader("광고비 vs 매출")
+        chart_cost_vs_revenue(daily)
 
     by_ch = df.groupby("channel")[["cost", "revenue", "conversions"]].sum().sort_values("revenue", ascending=False)
     with row2:
